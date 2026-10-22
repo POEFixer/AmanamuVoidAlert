@@ -48,8 +48,7 @@ bool ColorRow(const PluginUi::LabelColumn& col, const char* label, const char* i
 bool DrawSectionDetection(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_detect");
-    PluginUi::Heading(ICON_FA_CROSSHAIRS, "Detection");
-    PluginUi::HelpMarker(
+    PluginUi::Heading(ICON_FA_CROSSHAIRS, "Detection",
         "A monster is tracked when it has the Lightless faction monster modifier (the Amanamu abyss monster "
         "that sits in a void cloud).\n\n"
         "Its colour shows whether it still stands in its cloud: while inside it carries the "
@@ -172,13 +171,8 @@ bool DrawSectionLook(Settings& s) {
 
 bool DrawSectionDiagnostics(PanelContext& pc) {
     bool changed = false;
-    PluginUi::BeginCard("###av_card_diag");
-    ImGui::PushStyleColor(ImGuiCol_Text, PluginUi::Colors().Accent);
-    const bool open = ImGui::TreeNodeEx(ICON_FA_BUG "  Diagnostics###av_diag",
-                                        ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_SpanAvailWidth);
-    ImGui::PopStyleColor();
-    Tip("Numbers and tools for checking what the plugin sees.\nNot needed for normal play.");
-    if (open) {
+    if (PluginUi::BeginDiagnostics("Tracking counts, the debug window, detection logging and a reset of the markers.",
+                                   "av_diag")) {
         const TrackerStats& st = pc.tracker.Stats();
         char line[192];
         std::snprintf(line, sizeof(line), "Tracked now: %d. Drawn this frame: %d (%.2f ms).",
@@ -197,8 +191,8 @@ bool DrawSectionDiagnostics(PanelContext& pc) {
         ImGui::Spacing();
         if (PluginUi::SubtleButton("Forget tracked monsters###av_forget")) pc.tracker.Reset();
         Tip("Drop every marker now.\nMonsters still around are found again within a moment.");
+        PluginUi::EndDiagnostics();
     }
-    PluginUi::EndCard();
     return changed;
 }
 
@@ -226,6 +220,9 @@ bool DrawSettingsPanel(PanelContext& pc) {
     changed |= DrawSectionLook(pc.settings);
     ImGui::Spacing();
     changed |= DrawSectionDiagnostics(pc);
+    ImGui::Spacing();
+    PluginUi::Hint("Originally created by 1k4ru5g3. Maintained by POEFixer.");
+    ImGui::Spacing();
     return changed;
 }
 
