@@ -28,7 +28,7 @@
 POEFIXER_PLUGIN_INFO(
     "AmanamuVoidAlert",
     "Amanamu Void Alert",
-    "1.0.2",
+    "1.0.3",
     "1k4ru5g3, POEFixer",
     "Marks Amanamu (Lightless Well) abyss monsters with a ring, a label and an edge arrow whose colour shows whether the monster is still in its void cloud.")
 
