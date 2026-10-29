@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Follows the program language (ten languages).
+- The buff option names the buff as the game does: "Amanamu's Void".
+
 ## 1.0.3
 
 - Works with the separate menu window (POEFixer 366): the host hands the plugin the right drawing context for its settings tab and for its overlay.

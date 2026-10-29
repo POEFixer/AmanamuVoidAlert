@@ -1,10 +1,10 @@
 # Amanamu Void Alert
 
-Current version: 1.0.3
+Current version: 1.0.4
 
 Requires POE2Fixer 364 or newer.
 
-A POEFixer plugin for Path of Exile 2 abyss encounters. It marks Amanamu (Lightless Well) monsters, the ones that
+A POEFixer plugin for Path of Exile 2 abyss encounters. It marks Amanamu's Void monsters, the ones that
 sit in a void cloud, with a ring and a label, and points to them with an arrow at the screen edge when they are
 off screen. The colour tells you at a glance whether the monster is still in its cloud or has left it.
 
@@ -21,7 +21,7 @@ off screen. The colour tells you at a glance whether the monster is still in its
 
 ### Detection
 - **Only rare and unique monsters**: ignore normal and magic monsters.
-- **Also find by Lightless Well buff**: also track monsters that carry a Lightless Well buff, even when their
+- **Also find by Amanamu's Void buff**: also track monsters that carry the Amanamu's Void buff, even when their
   modifier is not readable. Turn it off if other monsters standing in the cloud get marked too.
 - **Tracking range**: how far from your character a monster is still picked up (game distance units).
 - **Keep when out of range**: how long a monster stays marked after leaving the tracking range.
@@ -49,7 +49,7 @@ Live numbers, **Show the debug window** (a list of tracked monsters with their m
 
 ## Known limits
 
-- A monster is recognised by the Lightless faction monster modifier and the Lightless Well buffs. If a game
+- A monster is recognised by the Lightless faction monster modifier and the `abyss_lightless_well` buffs. If a game
   patch renames them, the plugin needs an update.
 - The cloud state comes from the monster's `abyss_lightless_well_immune` buff and is refreshed ten times a
   second.
@@ -66,11 +66,12 @@ This repository is the plugin folder from the POE2Fixer source tree (`Plugins/Am
 
 - `POEFixer/plugin_sdk/` - the POE2Fixer Plugin SDK v6 headers (`PluginAbi.h`, `PluginSDK.h`)
 - `POEFixer/imgui/` - the Dear ImGui sources the DLL compiles against
+- `tools/plugin_i18n/gen.py` - the translation tool: after editing `Plugins/AmanamuVoidAlert/lang/en.json` run `python tools/plugin_i18n/gen.py Plugins/AmanamuVoidAlert` (it rewrites the embedded English header); `--gate` checks every language file and the keys the sources use
 
 1. Install Visual Studio 2022 with the "Desktop development with C++" workload (MSVC v143, Windows 10/11 SDK).
 2. Open `AmanamuVoidAlert.sln`, select **Release | x64** and build the solution.
 3. The plugin is written to `x64\Release\Plugins\AmanamuVoidAlert\AmanamuVoidAlert.dll` (Release builds carry no debug information, see `Directory.Build.targets`).
-4. Copy `AmanamuVoidAlert.dll` into `Plugins\AmanamuVoidAlert\` next to the POE2Fixer executable.
+4. Copy `AmanamuVoidAlert.dll` into `Plugins\AmanamuVoidAlert\` next to the POE2Fixer executable, together with `Plugins\AmanamuVoidAlert\lang` from this repository (same folder names).
 
 ## Credits
 

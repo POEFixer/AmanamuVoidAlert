@@ -1,11 +1,13 @@
 #include "Overlay.h"
 
+#include "Text.h"
+
 #include "../../../POEFixer/plugin_sdk/PluginUi.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
-#include <cstdio>
+#include <string>
 
 namespace AmanamuVoid {
 
@@ -115,8 +117,7 @@ void DrawOverlay(const PluginSDK::Context& ctx, const Settings& s, Tracker& trac
         const ImU32 color = ToU32(t.insideCloud ? s.insideColor : s.outsideColor, opacity);
         Vec2 body;
         const bool visible = Project(ctx, t.x, t.y, t.z - t.height * 0.5f, body);
-        char dist[24] = "";
-        if (s.showDistance) std::snprintf(dist, sizeof(dist), "  %.0f", t.distance);
+        const std::string dist = s.showDistance ? "  " + Num("%.0f", t.distance) : std::string();
 
         if (visible) {
             ++stats.drawn;
@@ -130,14 +131,14 @@ void DrawOverlay(const PluginSDK::Context& ctx, const Settings& s, Tracker& trac
                 dl->AddCircle(c, r, color, 0, th, ImDrawFlags_StrokeCenter);
             }
             if (s.drawLabels) {
-                char line2[64];
-                std::snprintf(line2, sizeof(line2), "%s%s", t.insideCloud ? "In cloud" : "Out of cloud", dist);
-                const char* line1 = "AMANAMU VOID";
+                const std::string line2 =
+                    std::string(t.insideCloud ? I18n::Tr("overlay_in_cloud") : I18n::Tr("overlay_out_of_cloud")) + dist;
+                const char* line1 = I18n::Tr("marker_title");
                 const ImVec2 s1 = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line1);
-                const ImVec2 s2 = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line2);
+                const ImVec2 s2 = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, line2.c_str());
                 const float bottom = c.y - s.labelOffset * k;
                 CenteredText(dl, fontSize, Vec2{ c.x, bottom - s2.y - s1.y * 0.5f }, w, h, color, line1);
-                CenteredText(dl, fontSize, Vec2{ c.x, bottom - s2.y * 0.5f }, w, h, color, line2);
+                CenteredText(dl, fontSize, Vec2{ c.x, bottom - s2.y * 0.5f }, w, h, color, line2.c_str());
             }
         }
 
@@ -147,11 +148,11 @@ void DrawOverlay(const PluginSDK::Context& ctx, const Settings& s, Tracker& trac
             const Vec2 pos = ClampToScreenEdge(origin, dir, w, h, std::max(s.arrowEdgeMargin * k, size * 1.5f));
             DrawArrow(dl, Vec2{ std::floor(pos.x + 0.5f), std::floor(pos.y + 0.5f) }, dir, size, color, edge);
 
-            char text[64];
-            std::snprintf(text, sizeof(text), "Void: %s%s", t.insideCloud ? "in cloud" : "out of cloud", dist);
-            const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text);
+            const std::string text = std::string(t.insideCloud ? I18n::Tr("overlay_arrow_in_cloud")
+                                                               : I18n::Tr("overlay_arrow_out_of_cloud")) + dist;
+            const ImVec2 ts = ImGui::GetFont()->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, text.c_str());
             const float back = size * 1.1f + std::max(ts.x, ts.y) * 0.55f;
-            CenteredText(dl, fontSize, Vec2{ pos.x - dir.x * back, pos.y - dir.y * back }, w, h, color, text);
+            CenteredText(dl, fontSize, Vec2{ pos.x - dir.x * back, pos.y - dir.y * back }, w, h, color, text.c_str());
             if (!visible) ++stats.drawn;
         }
     }
@@ -161,42 +162,46 @@ void DrawOverlay(const PluginSDK::Context& ctx, const Settings& s, Tracker& trac
 void DrawDebugWindow(const Tracker& tracker, bool* open, double now) {
     const float fs = ImGui::GetFontSize();
     ImGui::SetNextWindowSize(ImVec2(fs * 52.0f, fs * 26.0f), ImGuiCond_FirstUseEver);
-    if (!ImGui::Begin("Amanamu Void Alert - debug###amanamu_void_debug", open)) {
+    const std::string title = std::string(I18n::Tr("debug_title")) + "###amanamu_void_debug";
+    if (!ImGui::Begin(title.c_str(), open)) {
         ImGui::End();
         return;
     }
     const TrackerStats& st = tracker.Stats();
-    ImGui::Text("Area: %s", tracker.AreaName().empty() ? "-" : tracker.AreaName().c_str());
-    ImGui::Text("Tracked: %d   monsters remembered: %d", static_cast<int>(tracker.Monsters().size()),
-                static_cast<int>(st.knownMonsters));
-    ImGui::Text("Last pass: %d monsters, %d mod reads, %d buff reads, %.2f ms over %d frame(s)",
-                static_cast<int>(st.lastPassMonsters), st.modReads, st.buffReads, st.lastPassMs, st.lastPassFrames);
+    ImGui::TextUnformatted(I18n::TrF("debug_area", { { "area", tracker.AreaName().empty() ? "-" : tracker.AreaName() } }).c_str());
+    ImGui::TextUnformatted(I18n::TrF("debug_tracked", { { "count", Num("%d", static_cast<int>(tracker.Monsters().size())) } }).c_str());
+    ImGui::SameLine(0.0f, ImGui::GetFontSize());
+    ImGui::TextUnformatted(I18n::TrF("debug_remembered", { { "count", Num("%d", static_cast<int>(st.knownMonsters)) } }).c_str());
+    ImGui::TextUnformatted(LastPassText(st).c_str());
     ImGui::Separator();
 
-    const ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg | ImGuiTableFlags_Resizable |
+    // Not resizable: the fixed columns (width 0) fit their translated header and cells every frame.
+    const ImGuiTableFlags flags = ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_RowBg |
                                   ImGuiTableFlags_ScrollY | ImGuiTableFlags_PadOuterX;
     if (ImGui::BeginTable("###amanamu_tracked", 7, flags)) {
         ImGui::TableSetupScrollFreeze(0, 1);
-        ImGui::TableSetupColumn("Id", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("0000000").x);
-        ImGui::TableSetupColumn("Cloud", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Outside").x);
-        ImGui::TableSetupColumn("Found by", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("mod + buff").x);
-        ImGui::TableSetupColumn("Distance", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Distance").x);
-        ImGui::TableSetupColumn("Last seen", ImGuiTableColumnFlags_WidthFixed, ImGui::CalcTextSize("Last seen").x);
-        ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthStretch, 1.0f);
-        ImGui::TableSetupColumn("Mods / buffs", ImGuiTableColumnFlags_WidthStretch, 1.2f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_id"), ImGuiTableColumnFlags_WidthFixed, 0.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_cloud"), ImGuiTableColumnFlags_WidthFixed, 0.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_found_by"), ImGuiTableColumnFlags_WidthFixed, 0.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_distance"), ImGuiTableColumnFlags_WidthFixed, 0.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_last_seen"), ImGuiTableColumnFlags_WidthFixed, 0.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_path"), ImGuiTableColumnFlags_WidthStretch, 1.0f);
+        ImGui::TableSetupColumn(I18n::TrId("debug_col_mods"), ImGuiTableColumnFlags_WidthStretch, 1.2f);
         ImGui::TableHeadersRow();
         for (const Tracked& t : tracker.Monsters()) {
             ImGui::TableNextRow();
             ImGui::TableNextColumn();
             ImGui::Text("%u", t.id);
             ImGui::TableNextColumn();
-            ImGui::TextUnformatted(t.insideCloud ? "Inside" : "Outside");
+            ImGui::TextUnformatted(t.insideCloud ? I18n::Tr("debug_inside") : I18n::Tr("debug_outside"));
             ImGui::TableNextColumn();
-            ImGui::TextUnformatted(t.byMod && t.byBuff ? "mod + buff" : (t.byMod ? "mod" : "buff"));
+            ImGui::TextUnformatted(t.byMod && t.byBuff ? I18n::Tr("debug_found_both")
+                                   : (t.byMod ? I18n::Tr("debug_found_mod") : I18n::Tr("debug_found_buff")));
             ImGui::TableNextColumn();
             ImGui::Text("%.0f", t.distance);
             ImGui::TableNextColumn();
-            ImGui::Text("%.1f s", std::max(0.0, now - t.lastLive));
+            ImGui::TextUnformatted(
+                I18n::TrF("unit_seconds", { { "value", Num("%.1f", std::max(0.0, now - t.lastLive)) } }).c_str());
             ImGui::TableNextColumn();
             ImGui::PushTextWrapPos(0.0f);
             ImGui::TextUnformatted(t.path.c_str());
@@ -209,6 +214,15 @@ void DrawDebugWindow(const Tracker& tracker, bool* open, double now) {
         ImGui::EndTable();
     }
     ImGui::End();
+}
+
+std::string LastPassText(const TrackerStats& st) {
+    return I18n::TrF("diag_last_pass", {
+        { "monsters", Num("%d", static_cast<int>(st.lastPassMonsters)) },
+        { "mod_reads", Num("%d", st.modReads) },
+        { "buff_reads", Num("%d", st.buffReads) },
+        { "ms", Num("%.2f", st.lastPassMs) },
+        { "frames", Num("%d", st.lastPassFrames) } });
 }
 
 } // namespace AmanamuVoid

@@ -1,10 +1,12 @@
 #include "SettingsUi.h"
 
+#include "Text.h"
+
 #include "../../../POEFixer/plugin_sdk/PluginUi.h"
 #include "../../../POEFixer/imgui/IconsFontAwesome6.h"
 
 #include <cmath>
-#include <cstdio>
+#include <string>
 
 namespace AmanamuVoid {
 
@@ -30,7 +32,7 @@ bool ColorRow(const PluginUi::LabelColumn& col, const char* label, const char* i
     Tip(tip);
     if (changed) c = Color4{ v.x, v.y, v.z, v.w };
     ImGui::SameLine();
-    const char* sample = "AMANAMU VOID";
+    const char* sample = I18n::Tr("marker_title");
     const ImVec2 text = ImGui::CalcTextSize(sample);
     const float padX = ImGui::GetStyle().FramePadding.x;
     const ImVec2 size(text.x + padX * 2.0f, ImGui::GetFrameHeight());
@@ -48,31 +50,26 @@ bool ColorRow(const PluginUi::LabelColumn& col, const char* label, const char* i
 bool DrawSectionDetection(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_detect");
-    PluginUi::Heading(ICON_FA_CROSSHAIRS, "Detection",
-        "A monster is tracked when it has the Lightless faction monster modifier (the Amanamu abyss monster "
-        "that sits in a void cloud).\n\n"
-        "Its colour shows whether it still stands in its cloud: while inside it carries the "
-        "abyss_lightless_well_immune buff.");
+    PluginUi::Heading(ICON_FA_CROSSHAIRS, I18n::Tr("detection_heading"), I18n::Tr("detection_help"));
 
-    changed |= PluginUi::Check("Only rare and unique monsters", "av_rare", &s.onlyRareOrUnique,
-        "Ignore normal and magic monsters.\n"
-        "Leave it on unless you see an Amanamu monster that is not marked.");
-    changed |= PluginUi::Check("Also find by Lightless Well buff", "av_bybuff", &s.detectByBuff,
-        "Also track monsters that carry any Lightless Well buff, even when their modifier is not readable.\n"
-        "Turn it off if other monsters standing in the cloud get marked too.");
+    changed |= PluginUi::Check(I18n::Tr("detection_only_rare"), "av_rare", &s.onlyRareOrUnique,
+        I18n::Tr("detection_only_rare_tip"));
+    changed |= PluginUi::Check(I18n::Tr("detection_by_buff"), "av_bybuff", &s.detectByBuff,
+        I18n::Tr("detection_by_buff_tip"));
 
     ImGui::Spacing();
-    const PluginUi::LabelColumn col{ "Tracking range", "Keep when out of range", "Forget when gone" };
-    changed |= PluginUi::SliderFloatRow(col, "Tracking range", "###av_range", &s.maxDistance,
-        Limits::kDistanceMin, Limits::kDistanceMax, "%.0f",
-        "How far from your character (in game distance units) a monster is still picked up.");
-    changed |= PluginUi::SliderFloatRow(col, "Keep when out of range", "###av_keep", &s.keepOutOfRangeSeconds,
-        Limits::kKeepMin, Limits::kKeepMax, "%.0f s",
-        "How long a tracked monster stays marked after it moves out of the tracking range.");
-    changed |= PluginUi::SliderFloatRow(col, "Forget when gone", "###av_vanish", &s.forgetVanishedSeconds,
-        Limits::kVanishMin, Limits::kVanishMax, "%.2f s",
-        "How long the marker stays at the last known spot after the game stops sending the monster\n"
-        "(it died or is too far away).");
+    const char* range = I18n::Tr("detection_range");
+    const char* keep = I18n::Tr("detection_keep");
+    const char* forget = I18n::Tr("detection_forget");
+    const PluginUi::LabelColumn col{ range, keep, forget };
+    changed |= PluginUi::SliderFloatRow(col, range, "###av_range", &s.maxDistance,
+        Limits::kDistanceMin, Limits::kDistanceMax, "%.0f", I18n::Tr("detection_range_tip"));
+    changed |= PluginUi::SliderFloatRow(col, keep, "###av_keep", &s.keepOutOfRangeSeconds,
+        Limits::kKeepMin, Limits::kKeepMax, UnitFormat(I18n::Tr("unit_seconds"), "%.0f").c_str(),
+        I18n::Tr("detection_keep_tip"));
+    changed |= PluginUi::SliderFloatRow(col, forget, "###av_vanish", &s.forgetVanishedSeconds,
+        Limits::kVanishMin, Limits::kVanishMax, UnitFormat(I18n::Tr("unit_seconds"), "%.2f").c_str(),
+        I18n::Tr("detection_forget_tip"));
     PluginUi::EndCard();
     return changed;
 }
@@ -80,13 +77,12 @@ bool DrawSectionDetection(Settings& s) {
 bool DrawSectionVisibility(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_when");
-    PluginUi::Heading(ICON_FA_EYE, "When to show");
-    changed |= PluginUi::Check("Only while the game window is active", "av_fg", &s.onlyWhenForeground,
-        "Hide the markers while another window is in front of the game.");
-    changed |= PluginUi::Check("Hide while the POEFixer menu is open", "av_menu", &s.hideWhenMenuVisible,
-        "Hide the markers while the POEFixer menu is shown.\n"
-        "Leave it off to see changes live while you edit these settings.");
-    PluginUi::Hint("Never drawn in towns and hideouts, or while the game is paused.");
+    PluginUi::Heading(ICON_FA_EYE, I18n::Tr("visibility_heading"));
+    changed |= PluginUi::Check(I18n::Tr("visibility_foreground"), "av_fg", &s.onlyWhenForeground,
+        I18n::Tr("visibility_foreground_tip"));
+    changed |= PluginUi::Check(I18n::Tr("visibility_hide_menu"), "av_menu", &s.hideWhenMenuVisible,
+        I18n::Tr("visibility_hide_menu_tip"));
+    PluginUi::Hint(I18n::Tr("visibility_hint"));
     PluginUi::EndCard();
     return changed;
 }
@@ -94,24 +90,27 @@ bool DrawSectionVisibility(Settings& s) {
 bool DrawSectionMarker(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_marker");
-    PluginUi::Heading(ICON_FA_BULLSEYE, "Marker on the monster");
+    PluginUi::Heading(ICON_FA_BULLSEYE, I18n::Tr("marker_heading"));
 
-    changed |= PluginUi::Check("Ring", "av_ring", &s.drawCircle, "Draw a ring around the monster.");
-    changed |= PluginUi::Check("Name and cloud state", "av_label", &s.drawLabels,
-        "Write \"AMANAMU VOID\" and whether it is in or out of its cloud above the monster.");
-    changed |= PluginUi::Check("Show distance", "av_dist", &s.showDistance,
-        "Add the distance from your character to the label and to the edge arrow.");
+    changed |= PluginUi::Check(I18n::Tr("marker_ring"), "av_ring", &s.drawCircle, I18n::Tr("marker_ring_tip"));
+    const std::string labelTip = I18n::TrF("marker_label_tip", { { "label", I18n::Tr("marker_title") } });
+    changed |= PluginUi::Check(I18n::Tr("marker_label"), "av_label", &s.drawLabels, labelTip.c_str());
+    changed |= PluginUi::Check(I18n::Tr("marker_distance"), "av_dist", &s.showDistance,
+        I18n::Tr("marker_distance_tip"));
 
     ImGui::Spacing();
-    const PluginUi::LabelColumn col{ "Ring size", "Label height" };
+    const char* ringSize = I18n::Tr("marker_ring_size");
+    const char* labelHeight = I18n::Tr("marker_label_height");
+    const PluginUi::LabelColumn col{ ringSize, labelHeight };
     ImGui::BeginDisabled(!s.drawCircle);
-    changed |= PluginUi::SliderFloatRow(col, "Ring size", "###av_ring_size", &s.circleRadius,
-        Limits::kRingMin, Limits::kRingMax, "%.0f px", "Radius of the ring at Scale 100%.");
+    changed |= PluginUi::SliderFloatRow(col, ringSize, "###av_ring_size", &s.circleRadius,
+        Limits::kRingMin, Limits::kRingMax, UnitFormat(I18n::Tr("unit_pixels"), "%.0f").c_str(),
+        I18n::Tr("marker_ring_size_tip"));
     ImGui::EndDisabled();
     ImGui::BeginDisabled(!s.drawLabels);
-    changed |= PluginUi::SliderFloatRow(col, "Label height", "###av_label_h", &s.labelOffset,
-        Limits::kLabelMin, Limits::kLabelMax, "%.0f px",
-        "Space between the middle of the monster and the bottom of its label, at Scale 100%.");
+    changed |= PluginUi::SliderFloatRow(col, labelHeight, "###av_label_h", &s.labelOffset,
+        Limits::kLabelMin, Limits::kLabelMax, UnitFormat(I18n::Tr("unit_pixels"), "%.0f").c_str(),
+        I18n::Tr("marker_label_height_tip"));
     ImGui::EndDisabled();
     PluginUi::EndCard();
     return changed;
@@ -120,18 +119,18 @@ bool DrawSectionMarker(Settings& s) {
 bool DrawSectionArrow(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_arrow");
-    PluginUi::Heading(ICON_FA_LOCATION_ARROW, "Edge arrow");
-    changed |= PluginUi::Check("Point to monsters off screen", "av_arrows", &s.drawArrows,
-        "Show an arrow at the screen edge in the direction of a tracked monster you cannot see.");
+    PluginUi::Heading(ICON_FA_LOCATION_ARROW, I18n::Tr("arrow_heading"));
+    changed |= PluginUi::Check(I18n::Tr("arrow_off_screen"), "av_arrows", &s.drawArrows,
+        I18n::Tr("arrow_off_screen_tip"));
     ImGui::BeginDisabled(!s.drawArrows);
-    changed |= PluginUi::Check("Also while the monster is on screen", "av_arrow_on", &s.arrowWhenOnScreen,
-        "Keep the edge arrow even when the monster is visible.");
+    changed |= PluginUi::Check(I18n::Tr("arrow_on_screen"), "av_arrow_on", &s.arrowWhenOnScreen,
+        I18n::Tr("arrow_on_screen_tip"));
     ImGui::Spacing();
-    const PluginUi::LabelColumn col{ "Distance from the edge" };
-    changed |= PluginUi::SliderFloatRow(col, "Distance from the edge", "###av_margin", &s.arrowEdgeMargin,
-        Limits::kMarginMin, Limits::kMarginMax, "%.0f px",
-        "How far inside the screen edge the arrow sits, at Scale 100%.\n"
-        "Raise it if the arrow hides behind the game's own UI.");
+    const char* margin = I18n::Tr("arrow_margin");
+    const PluginUi::LabelColumn col{ margin };
+    changed |= PluginUi::SliderFloatRow(col, margin, "###av_margin", &s.arrowEdgeMargin,
+        Limits::kMarginMin, Limits::kMarginMax, UnitFormat(I18n::Tr("unit_pixels"), "%.0f").c_str(),
+        I18n::Tr("arrow_margin_tip"));
     ImGui::EndDisabled();
     PluginUi::EndCard();
     return changed;
@@ -140,23 +139,25 @@ bool DrawSectionArrow(Settings& s) {
 bool DrawSectionLook(Settings& s) {
     bool changed = false;
     PluginUi::BeginCard("###av_card_look");
-    PluginUi::Heading(ICON_FA_PALETTE, "Look");
-    const PluginUi::LabelColumn col{ "In its cloud", "Left its cloud", "Scale", "Opacity" };
-    changed |= ColorRow(col, "In its cloud", "###av_col_in", s.insideColor,
-        "Colour while the monster stands in its void cloud.");
-    changed |= ColorRow(col, "Left its cloud", "###av_col_out", s.outsideColor,
-        "Colour once the monster has left its cloud.");
-    col.Row("Scale");
+    PluginUi::Heading(ICON_FA_PALETTE, I18n::Tr("look_heading"));
+    const char* inside = I18n::Tr("look_inside");
+    const char* outside = I18n::Tr("look_outside");
+    const char* scale = I18n::Tr("look_scale");
+    const char* opacity = I18n::Tr("look_opacity");
+    const PluginUi::LabelColumn col{ inside, outside, scale, opacity };
+    changed |= ColorRow(col, inside, "###av_col_in", s.insideColor, I18n::Tr("look_inside_tip"));
+    changed |= ColorRow(col, outside, "###av_col_out", s.outsideColor, I18n::Tr("look_outside_tip"));
+    col.Row(scale);
     changed |= PercentSlider("###av_scale", s.scale, static_cast<int>(Limits::kScaleMin * 100.0f),
                              static_cast<int>(Limits::kScaleMax * 100.0f));
-    Tip("Size of rings, arrows and text.\nIt also follows the POEFixer font size.");
-    col.Row("Opacity");
+    Tip(I18n::Tr("look_scale_tip"));
+    col.Row(opacity);
     changed |= PercentSlider("###av_opacity", s.opacity, static_cast<int>(Limits::kOpacityMin * 100.0f), 100);
-    Tip("Fade everything this plugin draws.");
+    Tip(I18n::Tr("look_opacity_tip"));
     ImGui::Spacing();
-    const char* resetLabel = ICON_FA_ROTATE_LEFT "  Default look###av_look_reset";
-    PluginUi::AlignRight(PluginUi::ButtonWidth(resetLabel));
-    if (PluginUi::SubtleButton(resetLabel)) {
+    const std::string resetLabel = std::string(ICON_FA_ROTATE_LEFT "  ") + I18n::Tr("look_reset") + "###av_look_reset";
+    PluginUi::AlignRight(PluginUi::ButtonWidth(resetLabel.c_str()));
+    if (PluginUi::SubtleButton(resetLabel.c_str())) {
         const Settings d;
         s.insideColor = d.insideColor;
         s.outsideColor = d.outsideColor;
@@ -164,33 +165,28 @@ bool DrawSectionLook(Settings& s) {
         s.opacity = d.opacity;
         changed = true;
     }
-    Tip("Restore the default colours, scale and opacity.");
+    Tip(I18n::Tr("look_reset_tip"));
     PluginUi::EndCard();
     return changed;
 }
 
 bool DrawSectionDiagnostics(PanelContext& pc) {
     bool changed = false;
-    if (PluginUi::BeginDiagnostics("Tracking counts, the debug window, detection logging and a reset of the markers.",
-                                   "av_diag")) {
+    if (PluginUi::BeginDiagnostics(I18n::Tr("diag_tip"), "av_diag")) {
         const TrackerStats& st = pc.tracker.Stats();
-        char line[192];
-        std::snprintf(line, sizeof(line), "Tracked now: %d. Drawn this frame: %d (%.2f ms).",
-                      static_cast<int>(pc.tracker.Monsters().size()), pc.overlay.drawn, pc.overlay.lastFrameUs / 1000.0);
-        PluginUi::Hint(line);
-        std::snprintf(line, sizeof(line), "Last pass: %d monsters, %d mod reads, %d buff reads, %.2f ms over %d frame(s).",
-                      static_cast<int>(st.lastPassMonsters), st.modReads, st.buffReads, st.lastPassMs,
-                      st.lastPassFrames);
-        PluginUi::Hint(line);
+        PluginUi::Hint(I18n::TrF("diag_tracked_now", {
+            { "tracked", Num("%d", static_cast<int>(pc.tracker.Monsters().size())) },
+            { "drawn", Num("%d", pc.overlay.drawn) },
+            { "ms", Num("%.2f", pc.overlay.lastFrameUs / 1000.0) } }).c_str());
+        PluginUi::Hint(LastPassText(st).c_str());
         ImGui::Spacing();
-        PluginUi::Check("Show the debug window", "av_debug", &pc.showDebugWindow,
-            "Open a window listing every tracked monster with its modifiers and buffs.\n"
-            "Not saved: it is closed again next time.");
-        changed |= PluginUi::Check("Write new finds to the POEFixer log", "av_log", &pc.settings.logDetections,
-            "Add one line to the POEFixer log each time a monster starts being tracked.");
+        PluginUi::Check(I18n::Tr("diag_debug_window"), "av_debug", &pc.showDebugWindow,
+            I18n::Tr("diag_debug_window_tip"));
+        changed |= PluginUi::Check(I18n::Tr("diag_log"), "av_log", &pc.settings.logDetections,
+            I18n::Tr("diag_log_tip"));
         ImGui::Spacing();
-        if (PluginUi::SubtleButton("Forget tracked monsters###av_forget")) pc.tracker.Reset();
-        Tip("Drop every marker now.\nMonsters still around are found again within a moment.");
+        if (PluginUi::SubtleButton(I18n::TrId("diag_forget"))) pc.tracker.Reset();
+        Tip(I18n::Tr("diag_forget_tip"));
         PluginUi::EndDiagnostics();
     }
     return changed;
@@ -202,8 +198,7 @@ bool DrawSettingsPanel(PanelContext& pc) {
     if (!pc.hostCompatible) {
         ImGui::PushStyleColor(ImGuiCol_Text, PluginUi::Colors().Warning);
         ImGui::PushTextWrapPos(0.0f);
-        ImGui::TextUnformatted("This POEFixer version is too old for Amanamu Void Alert: nothing is drawn. "
-                               "Update POEFixer to use the plugin.");
+        ImGui::TextUnformatted(I18n::Tr("host_too_old"));
         ImGui::PopTextWrapPos();
         ImGui::PopStyleColor();
         ImGui::Spacing();

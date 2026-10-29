@@ -8,6 +8,8 @@
 #include "Settings.h"
 #include "Tracker.h"
 
+#include <string>
+
 namespace AmanamuVoid {
 
 struct OverlayStats {
@@ -19,5 +21,8 @@ void DrawOverlay(const PluginSDK::Context& ctx, const Settings& s, Tracker& trac
 
 // Diagnostics window listing what is tracked; `open` is cleared by its close button.
 void DrawDebugWindow(const Tracker& tracker, bool* open, double now);
+
+// "Last pass: ..." in the program language (the debug window and the Diagnostics card).
+std::string LastPassText(const TrackerStats& st);
 
 } // namespace AmanamuVoid

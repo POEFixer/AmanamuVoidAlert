@@ -1,4 +1,4 @@
-// Amanamu Void Alert: marks Amanamu (Lightless Well) abyss monsters with a ring,
+// Amanamu Void Alert: marks Amanamu's Void abyss monsters with a ring,
 // a label and an edge arrow whose colour shows whether the monster is still in
 // its void cloud.
 //
@@ -11,6 +11,9 @@
 #include <windows.h>
 
 #include "../../../POEFixer/plugin_sdk/PluginSDK.h"
+// Texts follow the program language (PluginI18n.h): lang/<code>.json next to the DLL, English
+// compiled in through lang_en.generated.h (python tools/plugin_i18n/gen.py Plugins/AmanamuVoidAlert).
+#include "lang_en.generated.h"   // once per DLL, after PluginSDK.h
 #include "../../../POEFixer/imgui/imgui.h"
 #include "../../../POEFixer/imgui/imgui_internal.h"   // ImTextInitClassifiers
 
@@ -28,9 +31,9 @@
 POEFIXER_PLUGIN_INFO(
     "AmanamuVoidAlert",
     "Amanamu Void Alert",
-    "1.0.3",
+    "1.0.4",
     "1k4ru5g3, POEFixer",
-    "Marks Amanamu (Lightless Well) abyss monsters with a ring, a label and an edge arrow whose colour shows whether the monster is still in its void cloud.")
+    "Marks Amanamu's Void abyss monsters with a ring, a label and an edge arrow whose colour shows whether the monster is still in its void cloud.")
 
 namespace {
 
