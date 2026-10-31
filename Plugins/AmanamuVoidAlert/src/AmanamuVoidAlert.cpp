@@ -31,7 +31,7 @@
 POEFIXER_PLUGIN_INFO(
     "AmanamuVoidAlert",
     "Amanamu Void Alert",
-    "1.0.4",
+    "1.0.5",
     "1k4ru5g3, POEFixer",
     "Marks Amanamu's Void abyss monsters with a ring, a label and an edge arrow whose colour shows whether the monster is still in its void cloud.")
 
